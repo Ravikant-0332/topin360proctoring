@@ -17,7 +17,16 @@ class Proctor(WebsocketConsumer):
         }))
         print('[CONNECTED]')
 
+
     def disconnect(self, close_code):
+
+        student = models.Student.objects.filter(student_id=self.uid).first()
+        assessment = models.Assessment.objects.filter(assessment_id=self.aid).first()
+
+        link = models.Link.objects.get(student=student, assessment=assessment)
+        link.active_count = max(link.active_count-1, 0)
+        link.save()
+
         try:
             with open(f'proctoring/media/temp/{self.file_name}.mp4', 'rb') as f:
                 models.Video(

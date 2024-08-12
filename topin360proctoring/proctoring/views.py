@@ -1,9 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from uuid import uuid4
 from django.http import Http404, StreamingHttpResponse
 import os
 from wsgiref.util import FileWrapper
 import mimetypes
+
+from .models import Student, Assessment, Link
+from django.urls import reverse
 
 
 def home(request):
@@ -38,12 +41,29 @@ def proctor(request, proctor_id):
         user_id = request.GET.get('student-id')
         assessment_id = request.GET.get('assessment-id')
 
-    context = {
-        'proctor_id': proctor_id,
-        'assessment_id': assessment_id,
-        'user_id': user_id,
-    }
-    return render(request, 'proctoring/proctor.html', context=context)
+        student = Student.objects.filter(student_id=user_id).first()
+        assessment = Assessment.objects.filter(assessment_id=assessment_id).first()
+
+        try:
+            link = Link.objects.get(student=student, assessment=assessment)
+            if link.active_count > 0:
+                return redirect('../link-error')
+            else:
+                link.active_count=1
+                link.save()
+        except:
+            new_link = Link(student=student, assessment=assessment, active_count=1)
+            new_link.save()
+            
+
+        context = {
+            'proctor_id': proctor_id,
+            'assessment_id': assessment_id,
+            'user_id': user_id,
+        }
+        return render(request, 'proctoring/proctor.html', context=context)
+    
+    return redirect('../')
 
 
 def download_file(request):
@@ -64,3 +84,7 @@ def download_file(request):
         return response
     except:
         raise Http404
+
+
+def link_error(request):
+    return render(request, 'proctoring/link-error.html')

@@ -35,3 +35,18 @@ class Video(models.Model):
 
     class Meta:
         ordering = ["-timestamp"]
+
+
+class Link(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.IntegerField(default=180)  # Duration in Minutes
+    active_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return str(self.start_time)
+
+    class Meta:
+        unique_together = (('student_id', 'assessment_id'))
+        ordering = ["-start_time"]
